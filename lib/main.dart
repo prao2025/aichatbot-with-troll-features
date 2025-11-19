@@ -13,6 +13,8 @@ class _MyAppState extends State<MyApp> {
   ThemeMode _themeMode = ThemeMode.light;
   // text scale factor: 0.9 = small, 1.0 = medium (default), 1.2 = large
   double _textScale = 1.0;
+  // app primary color (user-selectable)
+  Color _primaryColor = Colors.blue;
 
   void _setDarkMode(bool enabled) {
     setState(() {
@@ -26,11 +28,21 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  void _setPrimaryColor(Color color) {
+    setState(() {
+      _primaryColor = color;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Use default ThemeData and drive scaling only via MediaQuery.textScaleFactor
-    final lightTheme = ThemeData.light();
-    final darkTheme = ThemeData.dark();
+    // derive themes from selected primary color
+    final lightTheme = ThemeData.from(
+      colorScheme: ColorScheme.fromSeed(seedColor: _primaryColor, brightness: Brightness.light),
+    );
+    final darkTheme = ThemeData.from(
+      colorScheme: ColorScheme.fromSeed(seedColor: _primaryColor, brightness: Brightness.dark),
+    );
 
     return MaterialApp(
       title: 'Chatbot',
@@ -41,7 +53,7 @@ class _MyAppState extends State<MyApp> {
       builder: (context, child) {
         final mq = MediaQuery.of(context);
         return MediaQuery(
-          data: mq.copyWith(textScaler: TextScaler.linear(_textScale)),
+          data: mq.copyWith(textScaleFactor: _textScale),
           child: child ?? const SizedBox.shrink(),
         );
       },
@@ -50,6 +62,8 @@ class _MyAppState extends State<MyApp> {
         onToggleDark: _setDarkMode,
         textScale: _textScale,
         onChangeTextScale: _setTextScale,
+        primaryColor: _primaryColor,
+        onChangePrimaryColor: _setPrimaryColor,
       ),
     );
   }
@@ -60,6 +74,8 @@ class HomeScreen extends StatefulWidget {
   final ValueChanged<bool> onToggleDark;
   final double textScale;
   final ValueChanged<double> onChangeTextScale;
+  final Color primaryColor;
+  final ValueChanged<Color> onChangePrimaryColor;
 
   const HomeScreen({
     super.key,
@@ -67,6 +83,8 @@ class HomeScreen extends StatefulWidget {
     required this.onToggleDark,
     required this.textScale,
     required this.onChangeTextScale,
+    required this.primaryColor,
+    required this.onChangePrimaryColor,
   });
 
   @override
@@ -81,6 +99,54 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _chatVersion++;
     });
+  }
+
+  // show color picker dialog with a few color circles
+  Future<void> _showColorPicker(BuildContext context) async {
+    final colors = <Color>[
+      Colors.blue,
+      Colors.red,
+      Colors.green,
+      Colors.purple,
+      Colors.orange,
+      Colors.teal,
+      Colors.brown,
+      Colors.pink,
+    ];
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Choose primary color'),
+          content: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: colors.map((c) {
+              return GestureDetector(
+                onTap: () {
+                  widget.onChangePrimaryColor(c);
+                  Navigator.of(ctx).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Primary color updated')),
+                  );
+                },
+                child: CircleAvatar(
+                  backgroundColor: c,
+                  radius: 22,
+                  child: widget.primaryColor == c
+                      ? const Icon(Icons.check, color: Colors.white)
+                      : null,
+                ),
+              );
+            }).toList(),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Close')),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -116,6 +182,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             // Update parent theme and close the menu
                             widget.onToggleDark(v);
                             Navigator.of(context).pop();
+                          },
+                        ),
+                        // Palette button beside Dark mode
+                        IconButton(
+                          icon: const Icon(Icons.palette),
+                          tooltip: 'Choose primary color',
+                          onPressed: () {
+                            // open color picker dialog
+                            Navigator.of(context).pop();
+                            _showColorPicker(context);
                           },
                         ),
                       ],
