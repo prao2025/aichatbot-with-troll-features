@@ -8,7 +8,14 @@ import '../services/openai_service.dart';
 enum AiMode { normal, dumb, surprise }
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  final List<Message> messages;
+  final ValueChanged<List<Message>> onMessagesChanged;
+
+  const ChatScreen({
+    super.key,
+    required this.messages,
+    required this.onMessagesChanged,
+  });
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -25,10 +32,7 @@ class _ChatScreenState extends State<ChatScreen> {
   AiMode _aiMode = AiMode.normal;
   final Random _rng = Random();
 
-  final List<Message> _messages = [
-    Message(text: 'Welcome! This is your new chat interface.', isUser: false),
-    Message(text: 'Hi — try typing a message below.', isUser: false),
-  ];
+  late List<Message> _messages;
 
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -43,6 +47,8 @@ class _ChatScreenState extends State<ChatScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
+    // copy initial messages from parent
+    _messages = List<Message>.from(widget.messages);
   }
 
   @override
@@ -189,6 +195,8 @@ class _ChatScreenState extends State<ChatScreen> {
       _messages.add(Message(text: text.trim(), isUser: true));
       _isLoading = true;
     });
+    // persist to parent
+    widget.onMessagesChanged(List<Message>.from(_messages));
     _controller.clear();
     _scrollToBottom();
 
@@ -218,6 +226,8 @@ class _ChatScreenState extends State<ChatScreen> {
         _messages.add(Message(text: reply, isUser: false));
         _isLoading = false;
       });
+      // persist updated messages to parent
+      widget.onMessagesChanged(List<Message>.from(_messages));
       // If surprise mode, briefly show which style was chosen
       if (_aiMode == AiMode.surprise && surpriseStyleName != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -233,6 +243,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _messages.add(Message(text: 'Error: $e', isUser: false));
         _isLoading = false;
       });
+      widget.onMessagesChanged(List<Message>.from(_messages));
       _scrollToBottom();
     }
   }

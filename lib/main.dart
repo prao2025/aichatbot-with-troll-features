@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/chat_screen.dart';
+import 'models/message.dart';
 
 void main() => runApp(const MyApp());
 
@@ -95,9 +96,52 @@ class _HomeScreenState extends State<HomeScreen> {
   // simple version counter used as a key to rebuild ChatScreen to "clear" it
   int _chatVersion = 0;
 
+  // Chat list: each chat is a map {id, title, messages}
+  final List<Map<String, dynamic>> _chats = [
+    {
+      'id': DateTime.now().millisecondsSinceEpoch.toString(),
+      'title': 'Chat 1',
+      'messages': <Message>[
+        Message(text: 'Welcome! This is your new chat interface.', isUser: false),
+        Message(text: 'Hi — try typing a message below.', isUser: false),
+      ],
+    }
+  ];
+  int _selectedIndex = 0;
+
   void _clearChat() {
     setState(() {
+      _chats[_selectedIndex]['messages'] = <Message>[
+        Message(text: 'Welcome! This is your new chat interface.', isUser: false),
+        Message(text: 'Hi — try typing a message below.', isUser: false),
+      ];
       _chatVersion++;
+    });
+  }
+
+  void _newChat() {
+    setState(() {
+      final id = DateTime.now().millisecondsSinceEpoch.toString();
+      _chats.add({
+        'id': id,
+        'title': 'Chat ${_chats.length + 1}',
+        'messages': <Message>[
+          Message(text: 'New chat started.', isUser: false),
+        ],
+      });
+      _selectedIndex = _chats.length - 1;
+    });
+  }
+
+  void _deleteChat(int index) {
+    if (_chats.length == 1) {
+      // keep at least one chat: clear it instead
+      _clearChat();
+      return;
+    }
+    setState(() {
+      _chats.removeAt(index);
+      if (_selectedIndex >= _chats.length) _selectedIndex = _chats.length - 1;
     });
   }
 
@@ -231,8 +275,86 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      // Rebuild ChatScreen with a new key to clear state/content when _chatVersion changes.
-      body: ChatScreen(key: ValueKey(_chatVersion)),
+      // Side panel + Chat area
+      body: Row(
+        children: [
+          // Side panel (responsive width)
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final total = constraints.maxWidth;
+              // If the available width is large, use ~25% with safe clamps.
+              // On smaller screens, use a smaller ratio and lower minimum so the chat area remains usable.
+              final panelWidth = (total >= 900)
+                  ? (total * 0.25).clamp(220.0, 380.0)
+                  : (total * 0.22).clamp(100.0, 260.0);
+
+              return SizedBox(
+                width: panelWidth,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    border: Border(right: BorderSide(color: Theme.of(context).dividerColor)),
+                  ),
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                        child: Row(
+                          children: [
+                            Expanded(child: Text('Chats', style: Theme.of(context).textTheme.titleMedium)),
+                            IconButton(
+                              tooltip: 'New chat',
+                              icon: const Icon(Icons.add),
+                              onPressed: _newChat,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: _chats.length,
+                          itemBuilder: (ctx, idx) {
+                            final chat = _chats[idx];
+                            final isSelected = idx == _selectedIndex;
+                            return ListTile(
+                              selected: isSelected,
+                              title: Text(chat['title'] as String),
+                              subtitle: (chat['messages'] as List<Message>).isNotEmpty
+                                  ? Text((chat['messages'] as List<Message>).last.text,
+                                      maxLines: 1, overflow: TextOverflow.ellipsis)
+                                  : null,
+                              onTap: () => setState(() => _selectedIndex = idx),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete_forever),
+                                onPressed: () => _deleteChat(idx),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          // Divider between panels
+          const VerticalDivider(width: 1),
+          // Chat area uses the ChatScreen and passes messages + persistence callback
+          Expanded(
+            child: ChatScreen(
+              key: ValueKey('${_chats[_selectedIndex]['id']}_$_chatVersion'),
+              messages: List<Message>.from(_chats[_selectedIndex]['messages'] as List<Message>),
+              onMessagesChanged: (updated) {
+                setState(() {
+                  _chats[_selectedIndex]['messages'] = List<Message>.from(updated);
+                });
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
