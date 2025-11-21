@@ -36,7 +36,7 @@ class _MyAppState extends State<MyApp> {
       _textScale = prefs.getDouble('textScale') ?? 1.0;
       
       // Load primary color (saved as ARGB int)
-      final colorValue = prefs.getInt('primaryColor') ?? Colors.blue.value;
+      final colorValue = prefs.getInt('primaryColor') ?? Colors.blue.toARGB32();
       _primaryColor = Color(colorValue);
       
       _isLoading = false;
@@ -64,7 +64,7 @@ class _MyAppState extends State<MyApp> {
       _primaryColor = color;
     });
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('primaryColor', color.value);
+    await prefs.setInt('primaryColor', color.toARGB32());
   }
 
   @override
