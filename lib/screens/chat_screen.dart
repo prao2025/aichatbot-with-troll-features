@@ -10,11 +10,15 @@ enum AiMode { normal, dumb, surprise }
 class ChatScreen extends StatefulWidget {
   final List<Message> messages;
   final ValueChanged<List<Message>> onMessagesChanged;
+  final AiMode aiMode;
+  final ValueChanged<AiMode> onAiModeChanged;
 
   const ChatScreen({
     super.key,
     required this.messages,
     required this.onMessagesChanged,
+    required this.aiMode,
+    required this.onAiModeChanged,
   });
 
   @override
@@ -28,8 +32,6 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<String> _konami = ['U', 'U', 'D', 'D', 'L', 'R', 'L', 'R'];
   Offset? _panStart;
   Offset? _panCurrent;
-  // AI speaking mode
-  AiMode _aiMode = AiMode.normal;
   final Random _rng = Random();
 
   late List<Message> _messages;
@@ -114,9 +116,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 leading: const Icon(Icons.check),
                 title: const Text('Normal'),
                 subtitle: const Text('AI talks as it does now'),
-                selected: _aiMode == AiMode.normal,
+                selected: widget.aiMode == AiMode.normal,
                 onTap: () {
-                  setState(() => _aiMode = AiMode.normal);
+                  widget.onAiModeChanged(AiMode.normal);
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('AI mode set to: Normal')),
@@ -127,9 +129,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 leading: const Icon(Icons.sentiment_very_satisfied),
                 title: const Text('Dumb'),
                 subtitle: const Text('AI acts dumb / trolling'),
-                selected: _aiMode == AiMode.dumb,
+                selected: widget.aiMode == AiMode.dumb,
                 onTap: () {
-                  setState(() => _aiMode = AiMode.dumb);
+                  widget.onAiModeChanged(AiMode.dumb);
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('AI mode set to: Dumb')),
@@ -140,9 +142,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 leading: const Icon(Icons.shuffle),
                 title: const Text('Surprise me'),
                 subtitle: const Text('AI randomly picks a speaking style each reply'),
-                selected: _aiMode == AiMode.surprise,
+                selected: widget.aiMode == AiMode.surprise,
                 onTap: () {
-                  setState(() => _aiMode = AiMode.surprise);
+                  widget.onAiModeChanged(AiMode.surprise);
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('AI mode set to: Surprise Me')),
@@ -204,9 +206,9 @@ class _ChatScreenState extends State<ChatScreen> {
       // Build an instruction prefix that tells the model how to speak
       String? instr;
       String? surpriseStyleName;
-      if (_aiMode == AiMode.dumb) {
+      if (widget.aiMode == AiMode.dumb) {
         instr = _styleInstructions['dumb'];
-      } else if (_aiMode == AiMode.surprise) {
+      } else if (widget.aiMode == AiMode.surprise) {
         surpriseStyleName = _pickRandomStyleName();
         instr = _styleInstructions[surpriseStyleName];
       }
@@ -229,7 +231,7 @@ class _ChatScreenState extends State<ChatScreen> {
       // persist updated messages to parent
       widget.onMessagesChanged(List<Message>.from(_messages));
       // If surprise mode, briefly show which style was chosen
-      if (_aiMode == AiMode.surprise && surpriseStyleName != null) {
+      if (widget.aiMode == AiMode.surprise && surpriseStyleName != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Surprise style: $surpriseStyleName')),
         );
@@ -352,7 +354,7 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Column(
               children: [
                 // Persistent banner when Surprise mode is active
-                if (_aiMode == AiMode.surprise)
+                if (widget.aiMode == AiMode.surprise)
                   Container(
                     width: double.infinity,
                     color: Colors.amber.shade100,

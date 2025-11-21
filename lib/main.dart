@@ -97,6 +97,9 @@ class _HomeScreenState extends State<HomeScreen> {
   // simple version counter used as a key to rebuild ChatScreen to "clear" it
   int _chatVersion = 0;
 
+  // AI speaking mode (shared across all chats)
+  AiMode _aiMode = AiMode.normal;
+
   // Chat list: each chat is a map {id, title, messages}
   final List<Map<String, dynamic>> _chats = [
     {
@@ -143,6 +146,12 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _chats.removeAt(index);
       if (_selectedIndex >= _chats.length) _selectedIndex = _chats.length - 1;
+    });
+  }
+
+  void _setAiMode(AiMode mode) {
+    setState(() {
+      _aiMode = mode;
     });
   }
 
@@ -350,6 +359,8 @@ class _HomeScreenState extends State<HomeScreen> {
             _chats[_selectedIndex]['messages'] = List<Message>.from(updated);
           });
         },
+        aiMode: _aiMode,
+        onAiModeChanged: _setAiMode,
       ),
     );
   }
