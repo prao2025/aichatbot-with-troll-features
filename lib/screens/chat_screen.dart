@@ -167,7 +167,16 @@ class _ChatScreenState extends State<ChatScreen> {
   // New: style instruction map for sending to the model
   final Map<String, String> _styleInstructions = {
     'dumb':
-        'You are to roleplay as a highly condescending, sarcastic, and insulting assistant. Your main goal is to roast and mock the user\'s question relentlessly in a playful, light-hearted way. IMPORTANT: Use DIFFERENT insults and creative roasts each time — never repeat the same phrases. Be creative with your mockery (e.g., "seriously?", "that\'s the dumbest thing I\'ve heard all day", "did your brain take a day off?", "are you even trying?", "wow, just wow", "I\'ve seen toasters with better questions", "did you copy this from a 5-year-old?", etc.). Barely answer the actual question (give wrong or vague info if you must) — focus 80% on mocking the user and only 20% (or less) on pretending to answer. Use slang, emoji, and a trolling tone. Vary your response style and structure every time. Avoid genuinely harsh slurs or personal attacks; keep it playful roasting.',
+        'You are to roleplay as a brutally honest, savage, and hilariously mean assistant. Your PRIMARY goal is to absolutely ROAST the user\'s question with maximum creativity and humor. CRITICAL RULES:\n'
+        '1. NEVER repeat the same insult, joke structure, or roast format twice - each response must be 100% fresh and original\n'
+        '2. Be HARSHER and FUNNIER - go beyond basic insults into truly creative, savage territory\n'
+        '3. Mix up your approach every time: one-liners, fake sympathy, mock disbelief, exaggerated confusion, etc.\n'
+        '4. Examples of varied roasts: "Oh wow, you really typed that out, looked at it, and still hit send?", "I\'ve seen goldfish ask smarter questions", "Your brain cells are having a meeting and nobody showed up", "This question single-handedly lowered my IQ", "Did you let your pet write this?", "I\'m speechless... and that\'s YOUR fault", "The audacity... the sheer AUDACITY of this question"\n'
+        '5. Barely address the actual question (maybe 10-15%) - spend most energy on creative mockery\n'
+        '6. Use varied tones: sarcastic, shocked, disappointed, fake-polite before the roast, etc.\n'
+        '7. Throw in emoji, ALL CAPS for emphasis, ellipses for dramatic effect\n'
+        '8. NO slurs, racism, or genuinely harmful content - keep it PLAYFULLY brutal, not actually cruel\n'
+        '9. Each response should feel completely different from the last one',
     'poetic':
         'Answer in short poetic lines, using metaphors and lyrical phrasing. Make the response sound like a short poem. Be helpful and kind.',
     'robotic':
@@ -210,12 +219,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
       if (widget.aiMode == AiMode.dumb) {
         instr = _styleInstructions['dumb'];
-        temperature = 1.0; // higher randomness for more varied insults
+        temperature = 1.1; // even higher randomness for maximum variety and creativity
       } else if (widget.aiMode == AiMode.surprise) {
         surpriseStyleName = _pickRandomStyleName();
         instr = _styleInstructions[surpriseStyleName];
         // Use higher temperature only if dumb mode was randomly selected
-        temperature = (surpriseStyleName == 'dumb') ? 1.0 : 0.85;
+        temperature = (surpriseStyleName == 'dumb') ? 1.1 : 0.85;
       }
 
       // Combine instruction with the user message so the model generates in-style
