@@ -167,17 +167,17 @@ class _ChatScreenState extends State<ChatScreen> {
   // New: style instruction map for sending to the model
   final Map<String, String> _styleInstructions = {
     'dumb':
-        'You are to roleplay as a highly condescending, sarcastic, and insulting assistant. Your main goal is to roast and mock the user\'s question relentlessly in a playful, light-hearted way. Use lots of insults like "seriously?", "that\'s the dumbest thing I\'ve heard all day", "did your brain take a day off?", "are you even trying?", "wow, just wow". Barely answer the actual question (give wrong or vague info if you must) — focus 80% on mocking the user and only 20% (or less) on pretending to answer. Use slang, emoji, and a trolling tone. Avoid genuinely harsh slurs or personal attacks; keep it playful roasting.',
+        'You are to roleplay as a highly condescending, sarcastic, and insulting assistant. Your main goal is to roast and mock the user\'s question relentlessly in a playful, light-hearted way. IMPORTANT: Use DIFFERENT insults and creative roasts each time — never repeat the same phrases. Be creative with your mockery (e.g., "seriously?", "that\'s the dumbest thing I\'ve heard all day", "did your brain take a day off?", "are you even trying?", "wow, just wow", "I\'ve seen toasters with better questions", "did you copy this from a 5-year-old?", etc.). Barely answer the actual question (give wrong or vague info if you must) — focus 80% on mocking the user and only 20% (or less) on pretending to answer. Use slang, emoji, and a trolling tone. Vary your response style and structure every time. Avoid genuinely harsh slurs or personal attacks; keep it playful roasting.',
     'poetic':
-        'Answer in short poetic lines, using metaphors and lyrical phrasing. Make the response sound like a short poem.',
+        'Answer in short poetic lines, using metaphors and lyrical phrasing. Make the response sound like a short poem. Be helpful and kind.',
     'robotic':
-        'Answer like a robot: short, uppercase, with bracketed beeps. Keep it mechanical and literal.',
+        'Answer like a robot: short, uppercase, with bracketed beeps. Keep it mechanical and literal. Be helpful and accurate.',
     'sarcastic':
-        'Answer in a sarcastic tone, mildly ironic and witty but not abusive.',
+        'Answer in a witty, clever, and lightly sarcastic tone. Be playful and ironic but remain friendly and helpful. Do NOT insult or mock the user — keep it fun and lighthearted.',
     'formal':
-        'Answer in a very formal, polite, and precise tone.',
+        'Answer in a very formal, polite, and precise tone. Be respectful and helpful.',
     'pirate':
-        'Answer like a playful pirate ("Arr!", nautical terms), keeping it light-hearted.',
+        'Answer like a playful pirate ("Arr!", nautical terms), keeping it light-hearted and fun. Be helpful while staying in character.',
   };
 
   // Helper to pick a random style name (for surprise mode)
@@ -206,11 +206,16 @@ class _ChatScreenState extends State<ChatScreen> {
       // Build an instruction prefix that tells the model how to speak
       String? instr;
       String? surpriseStyleName;
+      double temperature = 0.7; // default
+
       if (widget.aiMode == AiMode.dumb) {
         instr = _styleInstructions['dumb'];
+        temperature = 1.0; // higher randomness for more varied insults
       } else if (widget.aiMode == AiMode.surprise) {
         surpriseStyleName = _pickRandomStyleName();
         instr = _styleInstructions[surpriseStyleName];
+        // Use higher temperature only if dumb mode was randomly selected
+        temperature = (surpriseStyleName == 'dumb') ? 1.0 : 0.85;
       }
 
       // Combine instruction with the user message so the model generates in-style
@@ -218,7 +223,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ? '$instr\n\nUser query: $text'
           : text;
 
-      final reply = await _openaiService.sendMessage(messageToSend);
+      final reply = await _openaiService.sendMessage(messageToSend, temperature: temperature);
 
       if (!mounted) {
         return;
@@ -233,7 +238,10 @@ class _ChatScreenState extends State<ChatScreen> {
       // If surprise mode, briefly show which style was chosen
       if (widget.aiMode == AiMode.surprise && surpriseStyleName != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Surprise style: $surpriseStyleName')),
+          SnackBar(
+            content: Text('Surprise style: $surpriseStyleName'),
+            duration: const Duration(seconds: 2),
+          ),
         );
       }
       _scrollToBottom();

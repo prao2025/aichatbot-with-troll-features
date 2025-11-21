@@ -13,7 +13,7 @@ class OpenAIService {
       : _apiKey = apiKey ?? const String.fromEnvironment('OPENAI_API_KEY'),
         _client = client ?? http.Client();
 
-  Future<String> sendMessage(String message) async {
+  Future<String> sendMessage(String message, {double temperature = 0.7}) async {
     if (_apiKey == null || _apiKey.isEmpty) {
       throw Exception(
         'OpenAI API key not set. '
@@ -34,8 +34,8 @@ class OpenAIService {
           'messages': [
             {'role': 'user', 'content': message}
           ],
-          'temperature': 0.7,
-          'max_tokens': 500,
+          'temperature': temperature,
+          'max_tokens': 800,
         }),
       )
           .timeout(const Duration(seconds: 30));
