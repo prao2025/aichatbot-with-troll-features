@@ -43,3 +43,16 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# VS Code settings with sensitive data
+.vscode/launch.json
+
+# Environment files
+.env
+.env.local
+*.env
+
+# API keys and secrets
+**/secrets/
+**/*secret*
+**/*api*key*
