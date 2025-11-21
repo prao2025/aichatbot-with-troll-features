@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/chat_screen.dart';
 import 'models/message.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() => runApp(const MyApp());
 
@@ -16,27 +17,66 @@ class _MyAppState extends State<MyApp> {
   double _textScale = 1.0;
   // app primary color (user-selectable)
   Color _primaryColor = Colors.blue;
+  bool _isLoading = true;
 
-  void _setDarkMode(bool enabled) {
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      // Load theme mode (0=light, 1=dark, 2=system)
+      final themeModeIndex = prefs.getInt('themeMode') ?? 0;
+      _themeMode = ThemeMode.values[themeModeIndex];
+      
+      // Load text scale
+      _textScale = prefs.getDouble('textScale') ?? 1.0;
+      
+      // Load primary color (saved as ARGB int)
+      final colorValue = prefs.getInt('primaryColor') ?? Colors.blue.value;
+      _primaryColor = Color(colorValue);
+      
+      _isLoading = false;
+    });
+  }
+
+  void _setDarkMode(bool enabled) async {
     setState(() {
       _themeMode = enabled ? ThemeMode.dark : ThemeMode.light;
     });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('themeMode', _themeMode.index);
   }
 
-  void _setTextScale(double scale) {
+  void _setTextScale(double scale) async {
     setState(() {
       _textScale = scale;
     });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('textScale', scale);
   }
 
-  void _setPrimaryColor(Color color) {
+  void _setPrimaryColor(Color color) async {
     setState(() {
       _primaryColor = color;
     });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('primaryColor', color.value);
   }
 
   @override
   Widget build(BuildContext context) {
+    // Show loading indicator while preferences are being loaded
+    if (_isLoading) {
+      return const MaterialApp(
+        home: Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
     // derive themes from selected primary color
     final lightTheme = ThemeData.from(
       colorScheme: ColorScheme.fromSeed(seedColor: _primaryColor, brightness: Brightness.light),
@@ -97,9 +137,6 @@ class _HomeScreenState extends State<HomeScreen> {
   // simple version counter used as a key to rebuild ChatScreen to "clear" it
   int _chatVersion = 0;
 
-  // AI speaking mode (shared across all chats)
-  AiMode _aiMode = AiMode.normal;
-
   // Chat list: each chat is a map {id, title, messages}
   final List<Map<String, dynamic>> _chats = [
     {
@@ -112,6 +149,23 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   ];
   int _selectedIndex = 0;
+
+  // AI speaking mode (shared across all chats)
+  AiMode _aiMode = AiMode.normal;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAiMode();
+  }
+
+  Future<void> _loadAiMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final modeIndex = prefs.getInt('aiMode') ?? 0;
+    setState(() {
+      _aiMode = AiMode.values[modeIndex];
+    });
+  }
 
   void _clearChat() {
     setState(() {
@@ -149,10 +203,12 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _setAiMode(AiMode mode) {
+  void _setAiMode(AiMode mode) async {
     setState(() {
       _aiMode = mode;
     });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('aiMode', mode.index);
   }
 
   // show color picker dialog with a few color circles
